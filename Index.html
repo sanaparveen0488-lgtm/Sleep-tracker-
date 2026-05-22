@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sleep Tracker</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    background:linear-gradient(to bottom right,#f4edff,#d8c3ff);
+    min-height:100vh;
+    padding:40px;
+    color:#4b3b67;
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+}
+
+.title{
+    text-align:center;
+    margin-bottom:30px;
+}
+
+.title h1{
+    font-size:42px;
+    color:#6d4ca3;
+}
+
+.title p{
+    opacity:0.8;
+    margin-top:10px;
+}
+
+.tracker-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:25px;
+}
+
+.card{
+    background:rgba(255,255,255,0.35);
+    backdrop-filter:blur(14px);
+    border-radius:25px;
+    padding:25px;
+    box-shadow:0 8px 25px rgba(109,76,163,0.15);
+}
+
+.card h2{
+    margin-bottom:20px;
+    color:#5f3d91;
+}
+
+label{
+    display:block;
+    margin-top:15px;
+    margin-bottom:8px;
+    font-weight:500;
+}
+
+input,select{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:14px;
+    background:#f7f2ff;
+    outline:none;
+    font-size:15px;
+}
+
+button{
+    width:100%;
+    margin-top:25px;
+    padding:14px;
+    border:none;
+    border-radius:16px;
+    background:#8d6bcf;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    background:#6d4ca3;
+    transform:translateY(-2px);
+}
+
+.records{
+    margin-top:20px;
+    max-height:300px;
+    overflow-y:auto;
+}
+
+.record{
+    background:#f4eeff;
+    padding:15px;
+    border-radius:16px;
+    margin-bottom:12px;
+}
+
+.record strong{
+    color:#6d4ca3;
+}
+
+.analytics{
+    margin-top:30px;
+}
+
+canvas{
+    background:white;
+    border-radius:20px;
+    padding:15px;
+}
+
+.mood{
+    display:flex;
+    gap:10px;
+    margin-top:12px;
+}
+
+.mood button{
+    flex:1;
+    margin-top:0;
+    background:#e6dbff;
+    color:#5b4687;
+    font-size:22px;
+}
+
+.mood button.active{
+    background:#8d6bcf;
+    color:white;
+}
+
+@media(max-width:900px){
+
+.tracker-grid{
+    grid-template-columns:1fr;
+}
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="title">
+    <h1>Sleep & Mood Tracker</h1>
+    <p>Track your sleep, emotions & weekly wellness analytics ✨</p>
+</div>
+
+<div class="tracker-grid">
+
+<div class="card">
+
+<h2>🌙 Sleep Tracker</h2>
+
+<label>Date</label>
+<input type="date" id="date">
+
+<label>Sleep Hours</label>
+<input type="number" id="hours" placeholder="e.g. 7">
+
+<label>Sleep Quality</label>
+
+<select id="quality">
+<option>Excellent</option>
+<option>Good</option>
+<option>Average</option>
+<option>Poor</option>
+</select>
+
+<label>Mood After Sleep</label>
+
+<div class="mood">
+
+<button class="mood-btn">😴</button>
+<button class="mood-btn">🙂</button>
+<button class="mood-btn">😊</button>
+<button class="mood-btn">😔</button>
+
+</div>
+
+<button onclick="saveData()">Save Record</button>
+
+</div>
+
+<div class="card">
+
+<h2>📋 Sleep Records</h2>
+
+<div class="records" id="records"></div>
+
+</div>
+
+</div>
+
+<div class="card analytics">
+
+<h2>📈 Weekly Sleep Analytics</h2>
+
+<canvas id="sleepChart"></canvas>
+
+</div>
+
+</div>
+
+<script>
+
+let selectedMood="🙂";
+
+const moodButtons=document.querySelectorAll(".mood-btn");
+
+moodButtons.forEach(btn=>{
+
+btn.addEventListener("click",()=>{
+
+moodButtons.forEach(b=>b.classList.remove("active"));
+
+btn.classList.add("active");
+
+selectedMood=btn.innerText;
+
+});
+
+});
+
+moodButtons[1].classList.add("active");
+
+let sleepData=JSON.parse(localStorage.getItem("sleepTracker")) || [];
+
+function saveData(){
+
+const date=document.getElementById("date").value;
+
+const hours=document.getElementById("hours").value;
+
+const quality=document.getElementById("quality").value;
+
+if(!date || !hours){
+
+alert("Please fill all details");
+
+return;
+
+}
+
+const entry={
+
+date,
+hours,
+quality,
+mood:selectedMood
+
+};
+
+sleepData.push(entry);
+
+localStorage.setItem("sleepTracker",JSON.stringify(sleepData));
+
+displayRecords();
+
+updateChart();
+
+document.getElementById("hours").value="";
+
+}
+
+function displayRecords(){
+
+const records=document.getElementById("records");
+
+records.innerHTML="";
+
+sleepData.slice().reverse().forEach(data=>{
+
+records.innerHTML += `
+
+<div class="record">
+
+<strong>${data.date}</strong><br><br>
+
+🌙 Sleep: ${data.hours} hrs <br>
+💜 Quality: ${data.quality}<br>
+😊 Mood: ${data.mood}
+
+</div>
+
+`;
+
+});
+
+}
+
+function updateChart(){
+
+const labels=sleepData.map(data=>data.date);
+
+const hours=sleepData.map(data=>data.hours);
+
+if(window.myChart){
+
+window.myChart.destroy();
+
+}
+
+const ctx=document.getElementById("sleepChart");
+
+window.myChart=new Chart(ctx,{
+
+type:'line',
+
+data:{
+
+labels:labels,
+
+datasets:[{
+
+label:'Sleep Hours',
+
+data:hours,
+
+borderColor:'#8d6bcf',
+
+backgroundColor:'rgba(141,107,207,0.2)',
+
+fill:true,
+
+tension:0.4
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+plugins:{
+
+legend:{
+
+labels:{
+color:'#5f3d91'
+}
+
+}
+
+},
+
+scales:{
+
+y:{
+
+beginAtZero:true,
+
+ticks:{
+color:'#5f3d91'
+}
+
+},
+
+x:{
+
+ticks:{
+color:'#5f3d91'
+}
+
+}
+
+}
+
+}
+
+});
+
+}
+
+displayRecords();
+
+updateChart();
+
+</script>
+
+</body>
+</html>
